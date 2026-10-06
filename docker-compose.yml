@@ -1,0 +1,36 @@
+services:
+  app:
+    build: .
+    environment:
+      APP_DEBUG: "false"
+      APP_ENV: local
+      APP_URL: http://localhost:8000
+      DB_CONNECTION: pgsql
+      DB_DATABASE: hardening_lab
+      DB_HOST: db
+      DB_PASSWORD: local-development-only
+      DB_PORT: 5432
+      DB_USERNAME: hardening_lab
+      LOG_CHANNEL: stderr
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: hardening_lab
+      POSTGRES_PASSWORD: local-development-only
+      POSTGRES_USER: hardening_lab
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hardening_lab -d hardening_lab"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - hardening-lab-postgres:/var/lib/postgresql/data
+
+volumes:
+  hardening-lab-postgres:

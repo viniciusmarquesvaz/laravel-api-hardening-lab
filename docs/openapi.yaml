@@ -1,0 +1,108 @@
+openapi: 3.1.0
+info:
+  title: Laravel API Hardening Lab
+  version: 1.0.0
+  description: Synthetic ticket API used to demonstrate practical Laravel security controls.
+servers:
+  - url: http://localhost:8000/api
+paths:
+  /tokens:
+    post:
+      summary: Create a Sanctum access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        "201":
+          description: Token created
+        "422":
+          description: Validation or credential error
+        "429":
+          description: Too many attempts
+  /tickets:
+    get:
+      summary: List tickets owned by the authenticated user
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Paginated ticket collection
+        "401":
+          description: Authentication required
+    post:
+      summary: Create a ticket owned by the authenticated user
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TicketInput"
+      responses:
+        "201":
+          description: Ticket created
+        "422":
+          description: Invalid input
+  /tickets/{ticket}:
+    parameters:
+      - name: ticket
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      summary: Read an owned ticket
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Ticket returned
+        "403":
+          description: Ticket belongs to another user
+    patch:
+      summary: Update safe fields on an owned ticket
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TicketInput"
+      responses:
+        "200":
+          description: Ticket updated
+        "403":
+          description: Ticket belongs to another user
+    delete:
+      summary: Delete an owned ticket
+      security: [{ bearerAuth: [] }]
+      responses:
+        "204":
+          description: Ticket deleted
+        "403":
+          description: Ticket belongs to another user
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    TicketInput:
+      type: object
+      required: [title, description]
+      properties:
+        title:
+          type: string
+          maxLength: 120
+        description:
+          type: string
+          maxLength: 2000

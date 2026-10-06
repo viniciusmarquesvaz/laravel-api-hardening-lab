@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: hardening_lab_test
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d hardening_lab_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      APP_ENV: testing
+      APP_DEBUG: "false"
+      DB_CONNECTION: pgsql
+      DB_DATABASE: hardening_lab_test
+      DB_HOST: 127.0.0.1
+      DB_PASSWORD: postgres
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: pdo_pgsql
+          coverage: none
+      - run: cp .env.example .env
+      - run: composer install --prefer-dist --no-interaction --no-progress
+      - run: php artisan key:generate
+      - run: php artisan migrate --force
+      - run: vendor/bin/pint --test
+      - run: php artisan test
